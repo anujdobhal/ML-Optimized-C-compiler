@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML-Optimized C Compiler Dashboard</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js CDN for performance graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Modern Glassmorphic Dark System styling */
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #06b6d4; /* Cyan */
+            --primary-gradient: linear-gradient(135deg, #06b6d4, #3b82f6);
+            --secondary: #8b5cf6; /* Violet */
+            --secondary-gradient: linear-gradient(135deg, #8b5cf6, #ec4899);
+            --success: #10b981;
+            --error: #ef4444;
+            --accent: #f59e0b;
+            --panel-bg: #111827;
+            --font-outfit: 'Outfit', sans-serif;
+            --font-inter: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            font-family: var(--font-inter);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* 1st Section: Title & Header */
+        header.project-header {
+            text-align: center;
+            padding: 2.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        header h1 {
+            font-family: var(--font-outfit);
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #00f2fe, #4facfe, #0000ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+
+        /* Grid Layout for dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+
+        /* Card panels styling */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 40px rgba(6, 182, 212, 0.1);
+        }
+
+        .card-title {
+            font-family: var(--font-outfit);
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.8rem;
+            color: #ffffff;
+        }
+
+        /* Form elements & buttons */
+        .editor-container {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        textarea.code-input {
+            width: 100%;
+            height: 320px;
+            background: #05070f;
+            color: #a9b2c3;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            padding: 1rem;
+            border: none;
+            outline: none;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            font-family: var(--font-outfit);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--secondary-gradient);
+            color: #ffffff;
+        }
+        .btn-success:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Syntax valid/invalid badges */
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .badge-valid {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .badge-invalid {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* 2nd Section: Parse tree visualizer */
+        .parse-tree-container {
+            height: 320px;
+            background: #05070f;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: auto;
+            position: relative;
+        }
+
+        #tree-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+
+        /* 3rd Section: IR Code & Table */
+        .code-display {
+            background: #05070f;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: #38bdf8;
+            height: 250px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            white-space: pre-wrap;
+        }
+
+        /* Custom Table Design */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+            font-family: var(--font-outfit);
+            font-weight: 600;
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-muted);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .highlight-val {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* 4th Section: Optimization Comparisons */
+        .side-by-side {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .side-by-side {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .speedup-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* 5th Section: Performance Graphs */
+        .chart-wrapper {
+            background: #05070f;
+            border-radius: 8px;
+            padding: 1.5rem;
+            height: 350px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Console Log Overlay */
+        .terminal-log {
+            background: #02040a;
+            color: #22c55e;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            border-left: 3px solid var(--success);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- 1st Section: Title, Short Description, and Control Panel -->
+    <header class="project-header">
+        <h1>ML-Optimized C Compiler</h1>
+        <p>
+            An advanced compilation system utilizing a Random Forest classifier to predict optimal loop unroll factors. 
+            Write your loop code below, build the AST/Parse Tree, generate Intermediate Representation (TAC), and execute ML-driven optimization in one seamless pipeline.
+        </p>
+    </header>
+
+    <div class="dashboard-grid">
+        
+        <!-- Control Panel with Code Input -->
+        <div class="card">
+            <div class="card-title">
+                <span>Code Input (C Source)</span>
+                <span class="status-badge badge-pending" id="validation-status">⚡ Code Pending</span>
+            </div>
+            
+            <div class="editor-container">
+                <textarea class="code-input" id="source-code" spellcheck="false">int main()
+{
+    int i = 0;
+    int sum = 0;
+    int val = 10;
+
+    for (i = 0; i < 5; i = i + 1)
+    {
+        if (i < 3)
+        {
+            sum = sum + val;
+        }
+        else
+        {
+            sum = sum - val;
+        }
+
+        while (val > 8)
+        {
+            val = val - 1;
+        }
+    }
+
+    return sum;
+}
+</textarea>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="generateParseTree()">
+                    🌳 Generate Parse Tree
+                </button>
+                <button class="btn btn-secondary" onclick="generateIR()">
+                    ⚙️ Generate IR
+                </button>
+                <button class="btn btn-success" onclick="runMLOptimization()">
+                    🧠 Run ML Optimization
+                </button>
+            </div>
+            
+            <div class="terminal-log" id="compiler-log">
+                [SYSTEM] Ready. Enter C code containing loops and click an action to start.
+            </div>
+        </div>
+
+        <!-- 2nd Section: Parser Visualization -->
+        <div class="card">
+            <div class="card-title">
+                <span>AST / Parse Tree Visualization</span>
+                <button class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem; min-width: auto;" onclick="resetZoom()">Reset View</button>
+            </div>
+            <div class="parse-tree-container" id="tree-container">
+                <div class="empty-state" id="tree-empty-msg">No AST generated yet. Click "Generate Parse Tree" to compile.</div>
+                <canvas id="tree-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 3rd Section: IR Code & Feature Extraction Table -->
+        <div class="card">
+            <div class="card-title">
+                <span>Intermediate Representation (TAC)</span>
+            </div>
+            <div class="code-display" id="ir-output">
+; Three-Address Code (TAC) will appear here after parsing...
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Static Feature Extraction (Loops)</span>
+            </div>
+            <div class="table-container" style="height: 250px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Loop ID</th>
+                            <th>Nesting Depth</th>
+                            <th>Total Instructions</th>
+                            <th>Memory Operations</th>
+                            <th>Branch Instructions</th>
+                            <th>Dependencies</th>
+                        </tr>
+                    </thead>
+                    <tbody id="feature-table-body">
+                        <tr>
+                            <td colspan="6" style="text-align: center; font-style: italic;">No features extracted yet. Run ML Optimization.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4th Section: Optimization Visualization -->
+        <div class="card full-width">
+            <div class="card-title">
+                <span>Loop Unrolling: Original IR vs Unrolled IR</span>
+            </div>
+            <div class="side-by-side">
+                <div>
+                    <h4 style="margin-bottom: 0.5rem; font-family: var(--font-outfit);">Original TAC</h4>
+                    <div class="code-display" id="original-ir-opt" style="height: 300px;">
+; Original IR before optimization...
+                    </div>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 0.5rem; font-family: var(--font-outfit);">Optimized / Unrolled IR</h4>
+                    <div class="code-display" id="unrolled-ir-opt" style="height: 300px; color: #10b981;">
+; Unrolled IR with ML unroll factors...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <div class="card-title">
+                <span>Performance Projection Table</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Loop Target</th>
+                            <th>Unroll Factor</th>
+                            <th>Original Iterations</th>
+                            <th>Unrolled Iterations</th>
+                            <th>Original Branches</th>
+                            <th>Unrolled Branches</th>
+                            <th>Est. Pre-ML Cycles</th>
+                            <th>Est. Post-ML Cycles</th>
+                            <th>Speedup Projection</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparison-table-body">
+                        <tr>
+                            <td colspan="9" style="text-align: center; font-style: italic;">No optimization projections available. Run ML Optimization.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5th Section: Performance Graph -->
+        <div class="card full-width">
+            <div class="card-title">
+                <span>Cycle-Count Overhead Reduction (Lower is Better)</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="performance-chart"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Main Application JS -->
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+
+
+FUNC main:
+i = 0
+sum = 0
+val = 10
+i = 0
+L0:
+t0 = i < 5
+ifFalse t0 goto L1
+t1 = i < 3
+ifFalse t1 goto L2
+t2 = sum + val
+sum = t2
+goto L3
+L2:
+t3 = sum - val
+sum = t3
+L3:
+L4:
+t4 = val > 8
+ifFalse t4 goto L5
+t5 = val - 1
+val = t5
+goto L4
+L5:
+return sum
+t6 = i + 1
+i = t6
+goto L0
+L1:
+t7 = i < 3
+ifFalse t7 goto L6
+t8 = sum + val
+sum = t8
+goto L7
+L6:
+t9 = sum - val
+sum = t9
+L7:
+L8:
+t10 = val > 8
+ifFalse t10 goto L9
+t11 = val - 1
+val = t11
+goto L8
+L9:
+return sum
